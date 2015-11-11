@@ -1,0 +1,1230 @@
+INFS 612 Computer Networking		Assignment1 of chapter1: Computer Networks and the Internet2. a. I think a circuit-switched network will be more appropriate for the application that    the question mentioned.Because in circuit-switched networks, the resources needed along a path to provide for communication between the end systems are reserved for the duration of the session. So when the network establishes the circuit, it also reserves a constant transaction rate in the network’s links for the duration of the connection. This reservation allows the sender to transfer the data to the receiver at the guaranteed constant rate.b.   In the 2.b part, I think the congestion control will NOT be needed.If the network is reserved for this application and the sum of this application data rates is less than the capacities of each link, there will not be any congestion. In this situation, even we use “packet-switching” network, we will not need to worry about congestion problem.3.  We use L: bits/packet, M: packets, Q: Links:   a.   Time for each packet: (L + h) / R;   Answer T = ts + Q * ((L + h) / R) + (M - 1) * ((L + h) / R).b. Answer T = Q * ((L + 2h) / R) + (M - 1) * ((L + 2h) / R).c. Answer T = Q * ((M * L + 2h) / R).  d. Answer T = ts + (M * L + h) / R. (Note: For a circuit-switched network, the    transmission time is independent of the number of links.) 4.  I did the experiment with the message-switching Java applet in this chapter. I found    the delays in the applet correspond to the delays in question 3. And I found out that the      link propagation delay have the SAME effect on the overall end-to-end delay for       packet switching and for message switching.5.  The total delay should be: (ceiling (F / S) + 1) * ((S + 40) / R)     Using calculus:     We will say when S = (40 * F)1/2, the delay of moving the packet from Host A to Host      B will be the minimum. 		6.a. dprop = m / s;b. dtrans = L / R;c. d = m / s + L / R;  (Note: there are only one link between these two Hosts.)d. The last bit will be in Host A.	e. The first bit will be in somewhere in the link.f. The first bit will be in Host B.g. Because: m /s = L / R, so m = L * s / R =8.9 * 105 (meters).7.  The time will be:      Each packet has: 48 * 8 = 384 bits;     Time = 384 / (64 * 103) + 384 / (1 * 106) + 2 * 10-3 + 384/ (64 * 103) 	  = 6 * 10-3  + 2 * 10-3 + 6 * 10-3  + 0.384 * 10-3	  = 14.384 * 10-3  (seconds)9.  For the N packets arrive the buffer at the same time every (L / R) * N seconds: The      first packet transmitted has no queuing delay; the second packet transmitted has a        queuing delay of L / R seconds; and more generally, the nth packet transmitted has a       queuing delay of ((n - 1) * L / R) seconds.     Total queuing delay = 0 + L / R + 2 * (L / R) + ………. +  ((n - 1) * L / R)			  = (N * (0 + ((n - 1) * L / R))) / 2 			  = (n * (n - 1) * (L / R)) / 2     Average queuing delay time = Total delay / n = ((n -1) * (L / R)) / 2.10. a. The formula for the total delay = L / R + (I * L) / (R * (1 - I));b. If we use L / R to show this formula, it will be: Let x = L / R, so delay = x + (a * x * x) / (1 – a * x) = x / (1 – a * x).11. Links: Q; Routers: Q –1; L: packet size. a.   (1). Processing delay: DTproc = dproc1 + dproc2 + …….+ dprocQ(2). Transmission delay: DTtrans = L / R1 + L / R2 + …….+ L / RQ(3). Propagation delay: DTprop = dprop1 + dprop2 + …….+ dpropQ 	So Dend-end = DTproc + DTtrans + DTpropb. 	if we have queuing delay: 	The Dend-end = DTproc + DTtrans + DTprop + (Q – 1) * dqueue
+
+
+
+
+import socket
+import os
+import sys
+import time 
+import  Queue
+from struct import *
+import threading 
+from threading import Thread
+from SocketServer import ThreadingMixIn
+
+class sendthread(Thread):
+    def __init__(self,socket):
+        Thread.__init__(self)
+        self.socket = socket
+        print "New thread started"
+    def run(self):
+        global ackmark
+        global fintimeout
+        global source_ip
+        global dest_ip 
+        global tcp_source
+        global tcp_dest   
+        global tcp_seq
+        global tcp_ack_seq
+        global tcp_doff
+        global tcp_fin
+        global tcp_syn
+        global tcp_rst
+        global tcp_psh
+        global tcp_ack
+        global tcp_urg
+        global tcp_window
+        global tcp_check
+        global tcp_urg_ptr 
+        global tcp_offset_res
+        global tcp_flags
+        global ackdict
+        global expectedseq
+        global seqwindow
+        global pktdata
+        global timeoutdata
+        global rttdata
+        global packetsize
+        global stopflag 
+        global winsize
+        global filename
+        global datatimeout
+        global retran
+        global senttimedata
+        global lastack 
+        senttimedata = {}
+        packetsize = 570
+        
+        
+        
+        for i in range(1,winsize+1):
+            item = i*packetsize + 1
+            seqwindow.append(item)
+        
+          
+        self.socket.settimeout(30.0)
+        
+        
+        sendingseq = 1
+        i=1
+        tcp_seq = 1
+       
+        
+        for message in iter(lambda: fin.read(550), ''):
+            tcp_check = 0
+            while sendingseq + packetsize not in seqwindow:
+                
+                continue 
+            
+                    
+            #print i 
+            #print "chunk:" , sendingseq 
+            tcp_seq = sendingseq
+            tcp_ack = 0
+            tcp_flags = tcp_fin + (tcp_syn << 1) + (tcp_rst << 2) + (tcp_psh <<3) + (tcp_ack << 4) + (tcp_urg << 5)
+            tcp_header = pack('!HHLLBBHHH' , tcp_source, tcp_dest, tcp_seq, tcp_ack_seq, tcp_offset_res, tcp_flags,  tcp_window, tcp_check, tcp_urg_ptr)
+            
+
+
+            source_address = socket.inet_aton( source_ip )
+            dest_address = socket.inet_aton(dest_ip)
+            placeholder = 0
+            protocol = socket.IPPROTO_TCP
+            
+            tcp_length = len(tcp_header) + len(message)
+      
+ 
+            #psh = pack('!4s4sBBH' , source_address , dest_address , placeholder , protocol , tcp_length);
+            psh = tcp_header + message  
+           
+            tcp_check = checksum(psh)  
+            #print "checksum for chunk:", sendingseq , "is ", tcp_check
+           
+            tcp_header = pack('!HHLLBBHHH' , tcp_source, tcp_dest, tcp_seq, tcp_ack_seq, tcp_offset_res, tcp_flags,  tcp_window, tcp_check, tcp_urg_ptr)
+            packet = tcp_header + message
+           # print "len of packet is " , len(packet)
+            
+            #print tcp_header
+    
+            print "sending packet" , tcp_seq 
+            ackmark = 0
+            sendingseq = sendingseq  + packetsize 
+            expectedseq = sendingseq  #nextseq that is to be sent
+            ackdict[expectedseq] = 0 # 0 indicates ack has not yet been received 
+                #l = i-1
+                #seqwindow[l] = sendingseq
+            i=(i+1)
+            senttime = time.time()    
+            self.socket.sendto(packet, (source_ip, clientport))
+            pktdata[tcp_seq] = packet 
+            timeoutdata[tcp_seq] = senttime + datatimeout #datatimeout is retransmission timeout
+           # print seqwindow 
+            rttdata[tcp_seq] = senttime 
+            senttimedata[tcp_seq] = senttime
+            
+            
+            
+                  
+                
+           # print " first" , i , "packets sent"
+           
+           # print ackdict.keys()
+        print seqwindow    
+        finflag = 1
+        b = 0
+        """
+        lock.acquire()
+        while b < winsize:
+            while ackdict[seqwindow[b]] != 1:
+                pass
+            
+            b = b + 1
+        lock.release()
+        """
+        
+        while 0 in ackdict.values():
+            continue
+        stopflag = 1 
+        
+        
+                              
+            
+        print "data done , sending fin packet"
+        print ackdict.keys()
+        print ackdict.values()
+        tcp_fin = 1
+        tcp_syn = 0
+        tcp_ack = 0   
+        tcp_seq = tcp_seq+1
+        ITER = 0
+        while True:
+            
+            tcp_flags = tcp_fin + (tcp_syn << 1) + (tcp_rst << 2) + (tcp_psh <<3) + (tcp_ack << 4) + (tcp_urg << 5)
+            FINpacket = pack('!HHLLBBHHH' , tcp_source, tcp_dest, tcp_seq, tcp_ack_seq, tcp_offset_res, tcp_flags,  tcp_window, tcp_check, tcp_urg_ptr)
+            stime = time.time()
+            if ITER == 0:
+                writelogsyn(FINpacket,"FIN packet sent ",0)
+                rttdata[tcp_seq] = stime
+                senttimedata[tcp_seq] = stime
+            ITER = ITER + 1
+            # time.sleep(7.0)  used this to check syn ack delay response at the client side
+           
+            self.socket.sendto(FINpacket, (source_ip, clientport))  
+           
+            #time.sleep(RTT)   
+            while fintimeout == 0:
+                pass  #wait till fintimeout values is update by the other thread
+            
+            if fintimeout == 1:
+            #retransmit
+                continue 
+            elif fintimeout == 2:
+                #exit
+                print "received fin ack , connection terminated"
+                
+                print "Data transfer succesfful"
+                print "Number of segments transmitted: ",len(ackdict)
+                print "Number of retransmitted segments: ",retran
+                
+                fin.close()
+                self.socket.close()
+                sys.exit()
+                
+        
+              
+        
+            
+        
+
+class receiverthread(Thread):
+    def __init__(self,socket):
+        Thread.__init__(self)
+        self.socket = socket
+        print "New thread started"
+    
+    def run(self):
+        global ackmark
+        global fintimeout
+        global ackdict
+        global expectedseq
+        global winsize 
+        global seqwindow
+        global timeoutdata
+        global pktdata
+        global packetsize
+        global lastack 
+        global stopflag 
+        global changeflag
+        global filename
+        global datatimeout
+        global rttdata
+        global lastack
+        changeflag = 0
+        stopflag = 0
+       
+       
+        while True:
+            try: 
+                ack, addr = self.socket.recvfrom(1024)
+                receivedtime = time.time()
+                acktcp_source, acktcp_dest, acktcp_seq, acktcp_ack_seq, acktcp_offset_res, acktcp_flags,  acktcp_window, acktcp_check, acktcp_urg_ptr = unpack('!HHLLBBHHH',ack)
+                if acktcp_seq == lastack - packetsize + 2:
+                    fintimeout = 2 
+                if evaluateflag(acktcp_flags) == "ACK": 
+                #    print "Received ack" , acktcp_seq
+                    timeoutdata[(acktcp_seq - packetsize)] = receivedtime
+                    ackdict[acktcp_seq] = 1
+                    thisseq = acktcp_seq - packetsize
+                    if rttdata[thisseq]!= 0:
+                        sampleRTT = receivedtime - rttdata[thisseq]
+                        calculatetimeout(sampleRTT) 
+                        rttdata[thisseq] = sampleRTT
+                    else:
+                        rttdata[thisseq] = receivedtime - senttimedata[thisseq]
+                    
+                    #print "setting ackmark " , ackmark
+                    lock.acquire()
+                   
+                    if seqwindow[0] == acktcp_seq and stopflag == 0:  #if first element of window has been acked , let us change the window 
+                        j=0
+                        i=1
+                        while i < winsize and (ackdict[seqwindow[i]] == 1):
+                            i= i+1
+                            
+                        k=0
+                        while k < i:
+                            writelog((seqwindow[k]-packetsize))
+                            k=k+1
+                                
+                        while i < winsize:    
+                            seqwindow[j] = seqwindow[i]
+                            j = j+1
+                            i = i + 1
+                     
+                        while j < winsize:
+                            
+                            if expectedseq + packetsize <= lastack:
+                                seqwindow[j] = expectedseq + packetsize 
+                                ackdict[seqwindow[j]] = 0
+                                expectedseq = expectedseq + packetsize
+                                j = j+1
+                            else:
+                                print "seqwindow done"
+                                #stopflag=1
+                                break
+                       
+                    lock.release()
+                                          
+                    print seqwindow , "after receiving ack" , acktcp_seq
+                   # print ackdict.keys()
+                elif evaluateflag(acktcp_flags) == "ACKFIN":
+                   
+                    fintimeout = 2 # indicates finack has been received , no retranmission needed
+                    finrtt = receivedtime - rttdata[(acktcp_seq-1)] 
+                    rttdata[(acktcp_seq-1)] = finrtt
+                    if changeflag == 0:
+                        writelogsyn(ack,"FIN ACK received",finrtt)
+                    changeflag = changeflag + 1
+                    self.socket.close()
+                    sys.exit()
+            except socket.timeout:
+                print "No packet has been received for the past 30 seconds "
+                fintimeout = 1 #indicates timeout needed
+                
+                
+class timerthread(Thread):
+    def __init__(self,socket):
+        Thread.__init__(self)
+        self.socket = socket
+        print "New thread started"
+        
+    def run(self):
+        global ackmark
+        global fintimeout
+        global ackdict
+        global expectedseq
+        global winsize 
+        global seqwindow
+        global pktdata
+        global timeoutdata
+        global timerqueue
+        global packetsize 
+        global lastack 
+        global changeflag
+        global rttdata
+        global datatimeout
+        global retran
+        
+       
+        seqwindow2 = []
+        prev = 0 
+        timerqueue = Queue.Queue()
+        a = packetsize + 1
+        for i in range(0,winsize):
+            seq = seqwindow[i]-packetsize
+            seqwindow2.append(seqwindow[i])  #duplicate seqwindow
+            timerqueue.put(seq)
+        endwin = seqwindow[winsize-1] - packetsize 
+        dupseq = endwin + packetsize  
+       # print "dulicate seqwindow ", seqwindow2 
+        
+        
+        while seqwindow[0] not in ackdict.keys(): 
+            pass
+        
+        pkt = timerqueue.get()
+        ackpkt = pkt + packetsize 
+            
+        while True:
+            while ackpkt in ackdict.keys() and pkt in timeoutdata.keys() and pkt in pktdata.keys():
+                   
+                if ackdict[ackpkt] != 1:
+                    print "timer dealing with packet " , pkt
+                    while ackdict[ackpkt] == 0 and time.time() < timeoutdata[pkt]:
+                        pass
+                    if ackdict[ackpkt] == 0 and time.time() >= timeoutdata[pkt]:
+                        print "retrasnmitting packet " , pkt
+                        retran = retran + 1
+                        senttime = time.time()
+                        #ackdict[ackpkt] = 2
+                        self.socket.sendto(pktdata[pkt], (source_ip, clientport))
+                        timeoutdata[pkt] = senttime + datatimeout
+                        rttdata[pkt] = 0 #karne's algorithm : marking retrasnmitted packets to avoid them for next rtt calculation
+                        timerqueue.put(pkt)
+                            
+                    elif ackdict[ackpkt] == 1:
+                        lock.acquire()
+                        if seqwindow2[0] == ackpkt:
+                            j=0
+                            i=1
+                            while i < winsize and (ackdict[seqwindow2[i]] == 1):
+                                i= i+1
+                                
+                            while i < winsize:    
+                                seqwindow2[j] = seqwindow2[i]
+                                j = j+1
+                                i = i + 1
+                            #  acknext = seqwindow[i-1]
+                            #  print "acknext is" , acknext
+                            while j < winsize:
+                            
+                                if dupseq + packetsize <= lastack:
+                                    seqwindow2[j] = dupseq + packetsize 
+                                     
+                                    dupseq = dupseq + packetsize
+                                    endwin = endwin + packetsize 
+                                    timerqueue.put(endwin)
+                                    j = j+1
+                                  
+                                else:
+                                      #stopflag=1
+                                      break 
+                            
+                        lock.release()
+                       
+               
+                elif (ackdict[ackpkt] == 1):
+                         lock.acquire()
+                        
+                         if seqwindow2[0] == ackpkt:
+                            
+                             j=0
+                             i=1
+                             while i < winsize and (ackdict[seqwindow2[i]] == 1):
+                                 i= i+1
+                                
+                             while i < winsize:    
+                                 seqwindow2[j] = seqwindow2[i]
+                                 j = j+1
+                                 i = i + 1
+                             #  acknext = seqwindow[i-1]
+                             #  print "acknext is" , acknext
+                             while j < winsize:
+                            
+                                 if dupseq + packetsize <= lastack:
+                                     seqwindow2[j] = dupseq + packetsize 
+                                     
+                                     dupseq = dupseq + packetsize
+                                     endwin = endwin + packetsize 
+                                     timerqueue.put(endwin)
+                                     j = j+1
+                                  
+                                 else:
+                                       #stopflag=1
+                                       break
+                         lock.release()
+                
+                            
+                    
+                pkt = timerqueue.get()
+                ackpkt = pkt + packetsize
+                #  print "waiting for packet" , pkt
+                
+                
+        
+            
+        
+        #sending process has started
+                 
+def writelog(seqnum):
+    global pktdata
+    global senttimedata
+    global rttdata
+    global filename 
+    
+    rtt = rttdata[seqnum]
+    packet = pktdata[seqnum]
+    tcpheader = packet[:20]
+    tcp_source, tcp_dest, tcp_seq, tcp_ack_seq, tcp_offset_res, tcp_flags, tcp_window, tcp_check, tcp_urg_ptr = unpack('!HHLLBBHHH',tcpheader)
+    packettype = "DATA "
+    writemsg = "Packet Type: " + packettype + "Timestamp: " + str(senttimedata[seqnum]) + "\n"
+    
+    acktcp_seq = tcp_seq + 1
+    writemsg = writemsg + " seq number of packet sent: " + str(tcp_seq) + "\n"
+    writemsg = writemsg + " header details: " + "\n"
+    
+    writemsg =  writemsg + " source: " + str(tcp_source) + " "
+    writemsg = writemsg + " destination: " + str(tcp_dest) + " " + "FLAGS: " + str(tcp_flags) + " " +  "windowsize: " + str(tcp_window) + " " + "checksum: " + str(tcp_check) + "\n"
+    
+    writemsg = writemsg + " Recieved ack details: " + " ack sequence number: " + str(acktcp_seq) + "\n"
+   
+    writemsg = writemsg + " Roundtrip time for the segment was: " + str(rtt) + "\n"
+    if filename != "stdout":
+        log.write(writemsg)
+        log.write("\n\n")
+    elif filename=="stdout":
+        sys.stdout.write(writemsg + "\n\n")
+
+def writelogsyn(packet,packettype,rtt):
+    
+    tcpheader = packet[:20]
+    tcp_source, tcp_dest, tcp_seq, tcp_ack_seq, tcp_offset_res, tcp_flags, tcp_window, tcp_check, tcp_urg_ptr = unpack('!HHLLBBHHH',tcpheader)
+    packettype = packettype
+    if tcp_seq in rttdata:
+        writemsg = "Packet Type: " + packettype + "Timestamp: " + str(rttdata[tcp_seq]) + "\n"
+    else:
+        writemsg = "Packet Type: " + packettype + "\n"
+        
+    log.write(writemsg)
+    acktcp_seq = tcp_seq + 1
+    writemsg = "seq number of packet sent: " + str(tcp_seq) + "\n" 
+    writemsg = writemsg + "header details: " + "\n"
+    
+    writemsg = writemsg + " source: " + str(tcp_source) + " "
+    writemsg = writemsg + " destination: " + str(tcp_dest) + " " + "FLAGS: " + str(tcp_flags) + " " +  "windowsize: " + str(tcp_window) + " " + "checksum: " + str(tcp_check) + "\n"
+    log.write(writemsg)
+    writemsg = writemsg + " Recieved ack: " + " ack sequence number: " + str(acktcp_seq) + "\n"
+    
+    if rtt!=0:
+        writemsg = writemsg + " Roundtrip time of the segment was: " + str(rtt) + "\n"
+        log.write(writemsg)
+        log.write("\n\n")
+    if filename != "stdout":
+        log.write(writemsg)
+        log.write("\n\n")
+    elif filename=="stdout":
+        sys.stdout.write(writemsg + "\n\n")
+    
+    
+    
+                 
+               
+def calculatetimeout(sampleRTT):
+    global estimatedRTT
+    global devRTT
+    global datatimeout
+    estimatedRTT = 0.875*estimatedRTT + 0.125*sampleRTT
+    if sampleRTT > estimatedRTT:
+        devRTT = 0.75*devRTT + 0.25*(sampleRTT-estimatedRTT)
+    else:
+        devRTT = 0.75*devRTT + 0.25*(estimatedRTT-sampleRTT)
+    datatimeout = estimatedRTT + 4*devRTT
+    print "new timneout value is" , datatimeout
+    
+            
+
+def checksum(data):
+    s = 0
+   
+    if len(data)%2==1:
+        data = data + "\0"   #padding
+   
+        # loop taking 2 characters at a time
+    for i in range(0, len(data), 2):
+        w = ord(data[i]) + (ord(data[i+1]) << 8 )
+       
+        s = s + w
+       
+        
+    s = (s>>16) + (s & 0xffff);
+   
+    s = s + (s >> 16);
+   
+    #complement and mask to 4 byte short
+    s = ~s & 0xffff
+    
+  
+    return s
+    
+def evaluateflag(flags):
+    num = 6
+    bits = [(flags >> bit) & 1 for bit in range(num -1, -1 , -1)]
+    
+   
+    flagval = ""
+    for position,bit in enumerate(bits):
+        if position == 1 and bit == 1:
+            flagval = flagval + "ACK"
+        if position == 5 and bit == 1:
+            flagval = flagval + "FIN" 
+    print flagval        
+    if flagval == "":
+        return "data" 
+    else:       
+        return flagval
+        
+        
+        
+        
+lock = threading.Lock() 
+global retran
+retran = 0
+global estimatedRTT 
+estimatedRTT = 0 
+global devRTT 
+devRTT = 0  
+global senttimedata 
+global datatimeout
+global lastack   
+global packetsize 
+packetsize = 570    
+global seqwindow   
+seqwindow = []     
+global winsize 
+if int(sys.argv[6])%570 == 0:
+    winsize = int(sys.argv[6])/570  
+else:
+    winsize = int(sys.argv[6])/570  + 1
+global filename 
+filename = sys.argv[1]
+global expectedseq
+global fintimeout 
+fintimeout = 0 # to indicate if FIN Ahas been transmitted successfully   
+global ackmark 
+ackmark = 0 
+global ackdict   
+ackdict = {} 
+global pktdata
+pktdata = {}  
+global timeoutdata
+timeoutdata = {}  
+global timerqueue
+timerqueue = Queue.Queue
+global source_ip  
+source_ip = "127.0.0.1"
+global dest_ip
+dest_ip = sys.argv[2]
+global UDP_PORT
+UDP_PORT = int(sys.argv[4]) #5005
+global clientport 
+clientport = int(sys.argv[3])  #6000
+global changeflag 
+global rttdata
+rttdata = {}   
+sock = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+sock.bind((source_ip, int(UDP_PORT)))
+# tcp header fields
+global tcp_source
+tcp_source = UDP_PORT # source port
+global tcp_dest   
+tcp_dest = clientport   # destination port
+global tcp_seq 
+tcp_seq = 0
+global tcp_ack_seq
+tcp_ack_seq = 0
+global tcp_doff
+tcp_doff = 5    #4 bit field, size of tcp header, 5 * 4 = 20 bytes
+#tcp flags
+global tcp_fin
+tcp_fin = 0
+global tcp_syn
+tcp_syn = 1
+global tcp_rst
+tcp_rst = 0
+global tcp_psh
+tcp_psh = 0
+global tcp_ack
+tcp_ack = 0
+global tcp_urg
+tcp_urg = 0
+global tcp_window
+    #   maximum allowed window size
+global tcp_check
+tcp_check = 0
+global tcp_urg_ptr 
+tcp_urg_ptr = 0
+global tcp_offset_res
+ 
+tcp_offset_res = (tcp_doff << 4) + 0
+global tcp_flags 
+tcp_flags = tcp_fin + (tcp_syn << 1) + (tcp_rst << 2) + (tcp_psh <<3) + (tcp_ack << 4) + (tcp_urg << 5)
+
+# the ! in the pack format string means network order
+logfilename = sys.argv[5]
+log = open(logfilename, 'w+')
+error_to_catch = getattr(__builtins__,'FileNotFoundError', IOError)
+try:
+    fin = open(filename, 'rb')
+except error_to_catch:
+    print "file not found"
+    sys.exit()
+except (OSError, IOError) as e:
+    print "File IO error"
+    sys.exit()
+
+filesize = os.stat(filename).st_size
+print "filesize is ", filesize 
+if filesize%550 == 0:
+    chunknum = filesize/550
+else:
+    chunknum = (filesize/550) + 1
+print "number of chunks is '", chunknum , "'"
+
+lastack = chunknum * packetsize + 1
+print "'",lastack,"'"
+if chunknum < winsize:
+    winsize = chunknum
+
+tcp_window = winsize
+while True:
+    i=1
+    data, addr = sock.recvfrom(1024) # buffer size is 1024 bytes
+    rtcp_source, rtcp_dest, rtcp_seq, rtcp_ack_seq, rtcp_offset_res, rtcp_flags,  rtcp_window, rtcp_check, rtcp_urg_ptr = unpack('!HHLLBBHHH',data)
+    writelogsyn(data,"SYN received",0)
+    print "received a SYN packet", rtcp_flags
+    
+    tcp_ack = 1
+    tcp_flags = tcp_fin + (tcp_syn << 1) + (tcp_rst << 2) + (tcp_psh <<3) + (tcp_ack << 4) + (tcp_urg << 5)
+    print tcp_flags 
+    SYNACKpacket = pack('!HHLLBBHHH' , tcp_source, tcp_dest, tcp_seq, tcp_ack_seq, tcp_offset_res, tcp_flags,  tcp_window, tcp_check, tcp_urg_ptr)
+    SYNACKpacket = SYNACKpacket + filename
+    # time.sleep(7.0)  used this to check syn ack delay response at the client side
+    writelogsyn(SYNACKpacket,"SYNACK sent",0) 
+    flag = 0
+    while flag != 1:
+        sock.sendto(SYNACKpacket, (source_ip, clientport))
+        senttime = time.time()
+        print "sent ack for SYN"
+        while time.time() - senttime < 6.0:
+            ack, addr = sock.recvfrom(1024)
+            acktcp_source, acktcp_dest, acktcp_seq, acktcp_ack_seq, acktcp_offset_res, acktcp_flags,  acktcp_window, acktcp_check, acktcp_urg_ptr = unpack('!HHLLBBHHH',ack)
+            if evaluateflag(acktcp_flags) != "ACK" or acktcp_seq != 1: 
+                print "this is not ack , waiting for ack still" 
+            else:
+                rcvtime = time.time()
+                R = rcvtime - senttime #initial roundtriptime
+                writelogsyn(ack,"ACK received for SYNACK",R) 
+                estimatedRTT = R
+                devRTT = R/2 
+                datatimeout = 3*R
+                flag = 1
+                break    
+    
+    print "ack received ,three way handshake complete ,  can now start sending data" , acktcp_flags
+    break
+    
+    
+    
+threads = [] 
+
+try:
+    
+    newthread = sendthread(sock)
+    newthread.daemon = True
+    newthread2 = receiverthread(sock)
+    newthread2.daemon = True
+    newthread3 = timerthread(sock)
+    newthread3.daemon = True
+    newthread.start()
+    newthread2.start()
+    newthread3.start()
+    threads.append(newthread)
+    threads.append(newthread2)
+    threads.append(newthread3)
+    while True:
+        for t in threads:
+            t.join(600)
+            if not t.isAlive():
+                break
+        break        
+            
+            
+except KeyboardInterrupt:
+    sys.exit()
+    
+  
+sys.exit()    
+
+
+import socket
+import sys
+import time 
+from struct import *
+import threading 
+from threading import Thread
+from SocketServer import ThreadingMixIn
+
+
+
+
+class sendthread(Thread):
+    def __init__(self):
+        Thread.__init__(self)
+        
+        print "New thread started"
+    def run(self):
+        print "entering 1"
+        
+def sendack(stcp_seq):
+    global UDP_IP
+    global receiverport
+    global ackmark
+    global source_ip
+    global dest_ip 
+    global tcp_source
+    global tcp_dest   
+    global tcp_seq
+    global tcp_ack_seq
+    global tcp_doff
+    global tcp_fin
+    global tcp_syn
+    global tcp_rst
+    global tcp_psh
+    global tcp_ack
+    global tcp_urg
+    global tcp_window
+    global tcp_check
+    global tcp_urg_ptr 
+    global tcp_offset_res
+    global tcp_flags
+
+    print "Sending ack for chunk" , stcp_seq
+    tcp_seq = stcp_seq + 1
+    tcp_ack = 1
+    tcp_flags = tcp_fin + (tcp_syn << 1) + (tcp_rst << 2) + (tcp_psh <<3) + (tcp_ack << 4) + (tcp_urg << 5)
+    ackpacket = pack('!HHLLBBHHH' , tcp_source, tcp_dest, tcp_seq, tcp_ack_seq, tcp_offset_res, tcp_flags,  tcp_window, tcp_check, tcp_urg_ptr)
+    #time.sleep(3.0)
+    sock.sendto(ackpacket, (UDP_IP, UDP_PORT))
+    
+
+class receivethread(Thread):
+    def __init__(self):
+        Thread.__init__(self)
+        print "New thread started"
+    
+    def run(self):
+        global UDP_IP
+        global receiverport
+        global ackmark
+        global source_ip
+        global dest_ip 
+        global tcp_source
+        global tcp_dest   
+        global tcp_seq
+        global tcp_ack_seq
+        global tcp_doff
+        global tcp_fin
+        global tcp_syn
+        global tcp_rst
+        global tcp_psh
+        global tcp_ack
+        global tcp_urg
+        global tcp_window
+        global tcp_check
+        global tcp_urg_ptr 
+        global tcp_offset_res
+        global tcp_flags
+        global packetsize
+        global pktdata
+        global filename
+        global winsize
+        global receiveddata
+        receiveddata = {}
+        stopflag = 0
+        seqwindow = []
+        rcvdict = {}
+        pktdict = {}
+        sock.settimeout(60.0)
+       
+        file = open(filename, 'w+')
+        
+        print "entering"
+        
+      
+        packetsize = 570
+        k=1
+        for i in range (1,winsize+1):
+            seqwindow.append(k)
+            k = k + packetsize
+        expectedseq = seqwindow[winsize-1]
+        for t in seqwindow:
+            rcvdict[t] = 0
+        
+        while True:
+            
+            try:
+                packet, addr = sock.recvfrom(2048)
+                rcvtime = time.time()
+                tcp_check = 0
+                tcp_header = packet[:20]
+                message = packet[20:]
+                #print tcp_header
+                #print message 
+                
+                
+                stcp_source, stcp_dest, stcp_seq, stcp_ack_seq, stcp_offset_res, stcp_flags,  stcp_window, stcp_check, stcp_urg_ptr = unpack('!HHLLBBHHH',tcp_header)
+                clienttcp_header = pack('!HHLLBBHHH' , stcp_source, stcp_dest, stcp_seq, stcp_ack_seq, stcp_offset_res, stcp_flags,  stcp_window, tcp_check, stcp_urg_ptr)
+                psh = clienttcp_header + message 
+                clienttcp_check = checksum(psh)
+                pktdata[stcp_seq] = packet
+                receiveddata[stcp_seq] = rcvtime
+               
+               # print "received tcp_check is ", stcp_check
+                #print "client tcp_check" , clienttcp_check 
+                
+                    
+                # print "chunk checksum received:", i ,stcp_check
+                #print evaluateflag(stcp_flags)
+                if evaluateflag(stcp_flags) == "data" and stcp_seq in seqwindow:
+                  
+                    if clienttcp_check == stcp_check:
+                        print "checksums match"
+                        if seqwindow[0] == stcp_seq:  #if first element of window has been acked , let us change the window 
+                            pktdict[stcp_seq] = message 
+                            rcvdict[seqwindow[0]] = 1 
+                            j=0
+                            i=1
+                            while i < winsize and rcvdict[seqwindow[i]]==1:
+                                i= i+1
+                            
+                            k=0
+                            while k < i:
+                                item = pktdata[seqwindow[k]]
+                                file.write(item[20:]) 
+                                writelog(item,seqwindow[k])
+                                k=k+1
+                            
+                            while i < winsize:    
+                                seqwindow[j] = seqwindow[i]
+                                j = j+1
+                                i = i + 1
+                          #  acknext = seqwindow[i-1]
+                          #  print "acknext is" , acknext
+                          
+                            while j < winsize:
+                                seqwindow[j] = expectedseq + packetsize 
+                                rcvdict[seqwindow[j]] = 0
+                                expectedseq = expectedseq + packetsize
+                                j = j+1
+                               
+                        else:
+                            rcvdict[stcp_seq] = 1 #1 indicates packet is received
+                            pktdict[stcp_seq] = message
+                            
+                        acknum = stcp_seq - 1 + packetsize
+                        print "Seqwindow after receiving packet " , stcp_seq , "is " ,seqwindow
+                        sendack(acknum)
+                    else:
+                        print "checksums don't match"
+                        continue
+                    
+               
+                elif evaluateflag(stcp_flags) == "FIN":
+                    print "connection is going to be terminated , sending FIN ACK"
+                    tcp_seq = stcp_seq + 1
+                    tcp_ack = 1
+                    tcp_fin = 1
+                    tcp_syn = 0
+                    tcp_flags = tcp_fin + (tcp_syn << 1) + (tcp_rst << 2) + (tcp_psh <<3) + (tcp_ack << 4) + (tcp_urg << 5)
+                    finackpacket = pack('!HHLLBBHHH' , tcp_source, tcp_dest, tcp_seq, tcp_ack_seq, tcp_offset_res, tcp_flags,  tcp_window, tcp_check, tcp_urg_ptr)
+                    sock.sendto(finackpacket, (UDP_IP, UDP_PORT))
+                    sock.close() 
+                    sys.exit()
+            except socket.error:
+                print "socket error"
+              
+            
+def writelog(packet,seqnum):
+    global pktdata
+    global receiveddata
+    packet = pktdata[seqnum]
+    tcpheader = packet[:20]
+    tcp_source, tcp_dest, tcp_seq, tcp_ack_seq, tcp_offset_res, tcp_flags, tcp_window, tcp_check, tcp_urg_ptr = unpack('!HHLLBBHHH',tcpheader)
+    packettype = "DATA "
+    writemsg = "Packet Type: " + packettype + "Timestamp: " + str(receiveddata[seqnum]) + "\n"
+ 
+    acktcp_seq = tcp_seq + 1
+    writemsg = writemsg + " seq number of packet received: " + str(tcp_seq) + "\n"
+    writemsg = writemsg + "header details: " + "\n"
+   
+    writemsg = writemsg + " source: " + str(tcp_source) + " "
+    writemsg = writemsg + " destination: " + str(tcp_dest) + " " + "FLAGS: " + str(tcp_flags) + " " +  "windowsize: " + str(tcp_window) + " " + "checksum: " + str(tcp_check) + "\n"
+    log.write(writemsg)
+    writemsg = writemsg + " Sending ack details: " + " ack sequence number: " + str(tcp_seq+1) + "\n"
+    
+    if filename != "stdout":
+        log.write(writemsg)
+        log.write("\n\n")
+    elif filename=="stdout":
+        sys.stdout.write(writemsg + "\n\n")
+    
+"""    
+def writelogsyn(packet,packettype):
+    
+    tcpheader = packet[:20]
+    tcp_source, tcp_dest, tcp_seq, tcp_ack_seq, tcp_offset_res, tcp_flags, tcp_window, tcp_check, tcp_urg_ptr = unpack('!HHLLBBHHH',tcpheader)
+    packettype = packettype
+    if tcp_seq in rttdata:
+        writemsg = "Packet Type: " + packettype + "Timestamp: " + " "+ "\n"
+    else:
+        writemsg = "Packet Type: " + packettype + "\n"
+        
+    log.write(writemsg)
+    acktcp_seq = tcp_seq + 1
+    writemsg = "seq number of packet sent: " + str(tcp_seq) + "\n" 
+    writemsg = writemsg + "header details: " + "\n"
+    log.write(writemsg)
+    writemsg = "source: " + str(tcp_source) + " "
+    writemsg = writemsg + " destination: " + str(tcp_dest) + " " + "FLAGS: " + str(tcp_flags) + " " +  "windowsize: " + str(tcp_window) + " " + "checksum: " + str(tcp_check) + "\n"
+    log.write(writemsg)
+    writemsg = "Sent ack: " + " ack sequence number: " + str(tcp_seq + 1) + "\n"
+    log.write(writemsg)
+    log.write("\n\n")     
+"""       
+        
+        
+        
+        
+def checksum(data):
+    s = 0
+   
+    if len(data)%2==1:
+        data = data + "\0"   #padding
+   
+        # loop taking 2 characters at a time
+    for i in range(0, len(data), 2):
+        w = ord(data[i]) + (ord(data[i+1]) << 8 )
+       
+        s = s + w
+       
+        
+    s = (s>>16) + (s & 0xffff);
+   
+    s = s + (s >> 16);
+   
+    #complement and mask to 4 byte short
+    s = ~s & 0xffff
+    
+  
+    return s
+
+
+
+def evaluateflag(flags):
+    num = 6
+    bits = [(flags >> bit) & 1 for bit in range(num -1, -1 , -1)]
+    
+    for position,bit in enumerate(bits):
+        if position == 1 and bit == 1:
+            return "ACK"
+        if position == 5 and bit == 1:
+            print "FIN pack"
+            return "FIN"    
+    return "data" 
+    
+    
+    
+    
+       
+global UDP_IP
+UDP_IP = sys.argv[3]#"127.0.0.1"
+global server_ip
+server_ip = "192.168.73.1"
+global UDP_PORT
+UDP_PORT = int(sys.argv[4])#5005
+global receiverport 
+receiverport = int(sys.argv[2])#5000
+global pktdata
+pktdata={}
+global receiveddata
+receiveddata = {}
+print "UDP target IP:", UDP_IP
+print "UDP target port:", UDP_PORT
+
+    
+
+# tcp header fields
+global tcp_source
+tcp_source = receiverport   # source port
+global tcp_dest
+tcp_dest = UDP_PORT   # destination port
+global tcp_Seq
+tcp_seq = 0
+global tcp_ack_seq
+tcp_ack_seq = 0
+global tcp_doff
+tcp_doff = 5    #4 bit field, size of tcp header, 5 * 4 = 20 bytes
+#tcp flags
+global tcp_fin
+tcp_fin = 0
+global tcp_syn
+tcp_syn = 1
+global tcp_rst
+tcp_rst = 0
+global tcp_psh
+tcp_psh = 0
+global tcp_Ack
+tcp_ack = 0
+global tcp_urg
+tcp_urg = 0
+global tcp_window
+tcp_window = 3   #   maximum allowed window size
+global tcp_check
+tcp_check = 0
+global tcp_urg_ptr
+tcp_urg_ptr = 0
+global tcp_offset
+global filename
+filename = sys.argv[1]
+global winsize
+ 
+tcp_offset_res = (tcp_doff << 4) + 0
+tcp_flags = tcp_fin + (tcp_syn << 1) + (tcp_rst << 2) + (tcp_psh <<3) + (tcp_ack << 4) + (tcp_urg << 5)
+i = 0
+sock = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+sock.bind((UDP_IP, int(receiverport))) 
+sock.settimeout(5.0)  # Timeout in case SYN,ACK gets lost
+while True:
+    SYNpacket = pack('!HHLLBBHHH' , tcp_source, tcp_dest, tcp_seq, tcp_ack_seq, tcp_offset_res, tcp_flags,  tcp_window, tcp_check, tcp_urg_ptr)
+    try:
+        sock.sendto(SYNpacket, (UDP_IP, UDP_PORT))
+        print "SYN to server " , tcp_flags
+    except socket.error:
+        print "not able to connect , trying again after", 1 << i , "seconds"
+        if i <= 5:
+            time.sleep(1 << i)
+            i=i+1
+            continue
+        else:
+            print "error , not able to eastablish connection"
+            break   
+    try:
+        synack, addr = sock.recvfrom(2048)
+        header = synack[:20]
+        
+    except socket.timeout:
+        print " syn ack not received yet , sending syn again" 
+        continue   
+        
+    stcp_source, stcp_dest, stcp_seq, stcp_ack_seq, stcp_offset_res, stcp_flags,  stcp_window, stcp_check, stcp_urg_ptr = unpack('!HHLLBBHHH',header)
+    if evaluateflag(stcp_flags) != "ACK" or stcp_seq!=0:
+        print "packet received is not syn ack , resending syn ", stcp_flags
+    else:
+        
+        print "syn ack received"
+        winsize = stcp_window
+        break
+tcp_seq = 1
+tcp_ack = 1
+tcp_flags = tcp_fin + (tcp_syn << 1) + (tcp_rst << 2) + (tcp_psh <<3) + (tcp_ack << 4) + (tcp_urg << 5)
+SYNACKpacket = pack('!HHLLBBHHH' , tcp_source, tcp_dest, tcp_seq, tcp_ack_seq, tcp_offset_res, tcp_flags,  tcp_window, tcp_check, tcp_urg_ptr)
+sock.sendto(SYNACKpacket, (UDP_IP, UDP_PORT))
+print "ack packet sent " , tcp_flags 
+
+
+print "Can now start receiving data"
+logfile = sys.argv[5]
+log = open(logfile,'w+')
+
+
+threads = [] 
+
+try:
+    newthread = sendthread()
+    newthread.daemon = True
+    newthread2 = receivethread()
+    newthread2.daemon = True
+    newthread.start()
+    newthread2.start()
+    threads.append(newthread)
+    threads.append(newthread2)
+    
+    for t in threads:
+        t.join(600)
+      
+           
+            
+except KeyboardInterrupt:
+    sys.exit()
+    
+  
+sys.exit() 
+
+
+Packet Type: DATA Timestamp: 1447118357.36
+ seq number of packet received: 1
+header details: 
+ source: 5005  destination: 6000 FLAGS: 2 windowsize: 3 checksum: 35235
+Packet Type: DATA Timestamp: 1447118357.36
+ seq number of packet received: 1
+header details: 
+ source: 5005  destination: 6000 FLAGS: 2 windowsize: 3 checksum: 35235
+ Sending ack details:  ack sequence number: 2
+
+
+Packet Type: DATA Timestamp: 1447118360.39
+ seq number of packet received: 571
+header details: 
+ source: 5005  destination: 6000 FLAGS: 2 windowsize: 3 checksum: 11915
+Packet Type: DATA Timestamp: 1447118360.39
+ seq number of packet received: 571
+header details: 
+ source: 5005  destination: 6000 FLAGS: 2 windowsize: 3 checksum: 11915
+ Sending ack details:  ack sequence number: 572
+
+
+Packet Type: DATA Timestamp: 1447118360.42
+ seq number of packet received: 1141
+header details: 
+ source: 5005  destination: 6000 FLAGS: 2 windowsize: 3 checksum: 4066
+Packet Type: DATA Timestamp: 1447118360.42
+ seq number of packet received: 1141
+header details: 
+ source: 5005  destination: 6000 FLAGS: 2 windowsize: 3 checksum: 4066
+ Sending ack details:  ack sequence number: 1142
+
+
+Packet Type: DATA Timestamp: 1447118358.37
+ seq number of packet received: 1711
+header details: 
+ source: 5005  destination: 6000 FLAGS: 2 windowsize: 3 checksum: 15173
+Packet Type: DATA Timestamp: 1447118358.37
+ seq number of packet received: 1711
+header details: 
+ source: 5005  destination: 6000 FLAGS: 2 windowsize: 3 checksum: 15173
+ Sending ack details:  ack sequence number: 1712
+
+
+Packet Type: DATA Timestamp: 1447118361.4
+ seq number of packet received: 2281
+header details: 
+ source: 5005  destination: 6000 FLAGS: 2 windowsize: 3 checksum: 6351
+Packet Type: DATA Timestamp: 1447118361.4
+ seq number of packet received: 2281
+header details: 
+ source: 5005  destination: 6000 FLAGS: 2 windowsize: 3 checksum: 6351
+ Sending ack details:  ack sequence number: 2282
+
+
+Packet Type: DATA Timestamp: 1447118361.42
+ seq number of packet received: 2851
+header details: 
+ source: 5005  destination: 6000 FLAGS: 2 windowsize: 3 checksum: 34652
+Packet Type: DATA Timestamp: 1447118361.42
+ seq number of packet received: 2851
+header details: 
+ source: 5005  destination: 6000 FLAGS: 2 windowsize: 3 checksum: 34652
+ Sending ack details:  ack sequence number: 2852
+
+
+Packet Type: DATA Timestamp: 1447118361.42
+ seq number of packet received: 3421
+header details: 
+ source: 5005  destination: 6000 FLAGS: 2 windowsize: 3 checksum: 8357
+Packet Type: DATA Timestamp: 1447118361.42
+ seq number of packet received: 3421
+header details: 
+ source: 5005  destinatioimport string 
+
+str = ""
+num = raw_input("Enter datasets")
+for p in range(1,int(num)+1):
+    encode = raw_input("encoded msg")
+    decode = raw_input("decoded msg")
+    for i in range(0, len(encode)):
+        if encode[i] == " ":
+            str = str + " "
+        else:
+            k = ord(encode[i])-65
+            str = str + decode[k]
+    
+    print str(p) + str         
+            
+            
+        n: 6000 FLAGS: 2 windowsize: 3 checksum: 8357
+ Sending ack details:  ack sequence number: 3422
+
+
+
+	
